@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISL Sign Language API Demo</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fafafa;
+        }
+        .section h2 {
+            color: #555;
+            margin-top: 0;
+        }
+        input, textarea, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #e9ecef;
+            border-left: 4px solid #007bff;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-left-color: #dc3545;
+            color: #721c24;
+        }
+        .success {
+            background-color: #d4edda;
+            border-left-color: #28a745;
+            color: #155724;
+        }
+        .loading {
+            color: #007bff;
+            font-style: italic;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .stat-card {
+            padding: 15px;
+            background-color: white;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .speed-control input {
+            width: 100px;
+        }
+        video {
+            width: 100%;
+            max-width: 480px;
+            height: auto;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤟 ISL Sign Language API Demo</h1>
+        
+        <!-- Health Check Section -->
+        <div class="section">
+            <h2>🏥 System Health Check</h2>
+            <button onclick="checkHealth()">Check System Health</button>
+            <div id="healthResult"></div>
+        </div>
+
+        <!-- Stats Section -->
+        <div class="section">
+            <h2>📊 System Statistics</h2>
+            <button onclick="getStats()">Get System Stats</button>
+            <div id="statsResult"></div>
+        </div>
+
+        <!-- Text to Sign Section -->
+        <div class="section">
+            <h2>✍️ Text to Sign Language</h2>
+            <textarea id="textInput" placeholder="Enter text to convert to sign language..." rows="4"></textarea>
+            <div class="speed-control">
+                <label>Speed:</label>
+                <input type="number" id="textSpeed" min="0.5" max="3" step="0.1" value="1.0">
+                <span>(0.5 = slower, 2.0 = faster)</span>
+            </div>
+            <button onclick="convertTextToSign()">Convert to Sign Language</button>
+            <div id="textResult"></div>
+        </div>
+
+        <!-- Speech to Sign Section -->
+        <div class="section">
+            <h2>🎤 Speech to Sign Language</h2>
+            <input type="file" id="audioFile" accept="audio/*">
+            <div class="speed-control">
+                <label>Speed:</label>
+                <input type="number" id="speechSpeed" min="0.5" max="3" step="0.1" value="1.0">
+                <span>(0.5 = slower, 2.0 = faster)</span>
+            </div>
+            <button onclick="convertSpeechToSign()">Convert Speech to Sign Language</button>
+            <div id="speechResult"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+
+        async function checkHealth() {
+            const resultDiv = document.getElementById('healthResult');
+            resultDiv.innerHTML = '<div class="result loading">Checking system health...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="result success">
+                            <strong>✅ System is healthy!</strong>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    throw new Error(data.detail || 'Health check failed');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <strong>❌ Health check failed:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function getStats() {
+            const resultDiv = document.getElementById('statsResult');
+            resultDiv.innerHTML = '<div class="result loading">Getting system statistics...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/stats`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="result success">
+                            <strong>📊 System Statistics:</strong>
+                            <div class="stats">
+                                <div class="stat-card">
+                                    <div class="stat-number">${data.loaded_signs}</div>
+                                    <div>Sign Images Loaded</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number">${data.available_characters.length}</div>
+                                    <div>Available Characters</div>
+                                </div>
+                            </div>
+                            <p><strong>Available Characters:</strong> ${data.available_characters.join(', ')}</p>
+                        </div>
+                    `;
+                } else {
+                    throw new Error(data.detail || 'Failed to get stats');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <strong>❌ Failed to get stats:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function convertTextToSign() {
+            const text = document.getElementById('textInput').value;
+            const speed = parseFloat(document.getElementById('textSpeed').value);
+            const resultDiv = document.getElementById('textResult');
+            
+            if (!text.trim()) {
+                resultDiv.innerHTML = '<div class="result error">Please enter some text to convert.</div>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '<div class="result loading">Converting text to sign language video...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/text-to-sign`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text, speed }),
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="result success">
+                            <strong>✅ Text converted successfully!</strong>
+                            <p><strong>Text:</strong> ${data.text}</p>
+                            <p><strong>Video:</strong> ${data.video_path}</p>
+                            <p><strong>Message:</strong> ${data.message}</p>
+                            <a href="${API_BASE}/download-video/${data.video_path}" target="_blank">
+                                <button type="button">📥 Download Video</button>
+                            </a>
+                        </div>
+                    `;
+                } else {
+                    throw new Error(data.detail || 'Conversion failed');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <strong>❌ Conversion failed:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function convertSpeechToSign() {
+            const fileInput = document.getElementById('audioFile');
+            const speed = parseFloat(document.getElementById('speechSpeed').value);
+            const resultDiv = document.getElementById('speechResult');
+            
+            if (!fileInput.files[0]) {
+                resultDiv.innerHTML = '<div class="result error">Please select an audio file.</div>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '<div class="result loading">Converting speech to sign language video...</div>';
+            
+            try {
+                const formData = new FormData();
+                formData.append('audio_file', fileInput.files[0]);
+                formData.append('speed', speed.toString());
+                
+                const response = await fetch(`${API_BASE}/speech-to-sign`, {
+                    method: 'POST',
+                    body: formData,
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="result success">
+                            <strong>✅ Speech converted successfully!</strong>
+                            <p><strong>Extracted Text:</strong> ${data.text}</p>
+                            <p><strong>Video:</strong> ${data.video_path}</p>
+                            <p><strong>Message:</strong> ${data.message}</p>
+                            <a href="${API_BASE}/download-video/${data.video_path}" target="_blank">
+                                <button type="button">📥 Download Video</button>
+                            </a>
+                        </div>
+                    `;
+                } else {
+                    throw new Error(data.detail || 'Conversion failed');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <strong>❌ Conversion failed:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Load stats on page load
+        window.onload = function() {
+            checkHealth();
+            getStats();
+        };
+    </script>
+</body>
+</html>

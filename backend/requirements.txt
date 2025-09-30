@@ -1,0 +1,21 @@
+# ISL Sign Language Backend API Requirements
+
+# Core API
+fastapi
+uvicorn
+python-multipart
+
+# Speech Recognition (no credentials needed)
+SpeechRecognition
+requests
+
+# Audio processing
+pydub
+
+# Computer Vision and Video Processing
+opencv-python
+numpy
+
+# Build tools
+setuptools
+wheel
